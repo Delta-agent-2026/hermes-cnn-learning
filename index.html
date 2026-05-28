@@ -3,1080 +3,230 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Understanding Convolutional Neural Networks</title>
+<title>Transformer Architecture Explained</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg: #0a0a0a;
-  --bg-card: #111111;
-  --bg-card-inner: #161616;
-  --bg-hover: #1a1a1a;
-  --border: #222222;
-  --border-light: #2a2a2a;
-  --text: #e4e4e4;
-  --text-dim: #888888;
-  --text-dimmer: #555555;
-  --accent: #2dd4bf;
-  --accent-dim: rgba(45, 212, 191, 0.1);
-  --accent-dim2: rgba(45, 212, 191, 0.05);
-  --warning: #f59e0b;
-  --error: #ef4444;
-  --success: #22c55e;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --bg: #0a0a0a; --bg-card: #111111; --bg-card-inner: #161616;
+  --border: #222222; --border-light: #2a2a2a; --text: #e4e4e4;
+  --text-dim: #888888; --text-dimmer: #555555;
+  --accent: #a78bfa; --accent-dim: rgba(167,139,250,0.1);
+  --accent-dim2: rgba(167,139,250,0.05);
+  --warning: #f59e0b; --error: #ef4444; --success: #22c55e;
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px;
 }
 html { scroll-behavior: smooth; }
-body {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  line-height: 1.7;
-  font-size: 16px;
-  -webkit-font-smoothing: antialiased;
-}
-nav {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: rgba(10, 10, 10, 0.85);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
-  padding: 0 2rem;
-}
-nav .nav-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 56px;
-}
-nav .logo {
-  font-weight: 800;
-  font-size: 14px;
-  letter-spacing: -0.02em;
-  color: var(--accent);
-  text-transform: uppercase;
-}
-nav .nav-links {
-  display: flex;
-  gap: 1.5rem;
-  list-style: none;
-}
-nav .nav-links a {
-  color: var(--text-dim);
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 500;
-  transition: color 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
+body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; font-size: 16px; -webkit-font-smoothing: antialiased; }
+nav { position: sticky; top: 0; z-index: 100; background: rgba(10,10,10,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 2rem; }
+nav .nav-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+nav .logo { font-weight: 800; font-size: 14px; letter-spacing: -0.02em; color: var(--accent); text-transform: uppercase; }
+nav .nav-links { display: flex; gap: 1.5rem; list-style: none; }
+nav .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 13px; font-weight: 500; transition: color 200ms; }
 nav .nav-links a:hover { color: var(--text); }
-main {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 2rem 6rem;
-}
-section {
-  margin-bottom: 5rem;
-  opacity: 0;
-  transform: translateY(20px);
-  animation: fadeUp 0.6s ease forwards;
-}
-section:nth-child(1) { animation-delay: 0.05s; }
-section:nth-child(2) { animation-delay: 0.1s; }
-section:nth-child(3) { animation-delay: 0.15s; }
-section:nth-child(4) { animation-delay: 0.2s; }
-section:nth-child(5) { animation-delay: 0.25s; }
-section:nth-child(6) { animation-delay: 0.3s; }
-section:nth-child(7) { animation-delay: 0.35s; }
+main { max-width: 1200px; margin: 0 auto; padding: 0 2rem 6rem; }
+section { margin-bottom: 5rem; opacity: 0; transform: translateY(20px); animation: fadeUp 0.6s ease forwards; }
+section:nth-child(1) { animation-delay: 0.05s; } section:nth-child(2) { animation-delay: 0.1s; } section:nth-child(3) { animation-delay: 0.15s; } section:nth-child(4) { animation-delay: 0.2s; }
 @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
-.eyebrow {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--accent);
-  background: var(--accent-dim);
-  padding: 4px 10px;
-  border-radius: 100px;
-  margin-bottom: 1rem;
-}
-h1 {
-  font-size: clamp(2rem, 5vw, 3.2rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-  margin-bottom: 1.2rem;
-}
-h2 {
-  font-size: 1.6rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-  margin-bottom: 1rem;
-}
+.eyebrow { display: inline-block; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); background: var(--accent-dim); padding: 4px 10px; border-radius: 100px; margin-bottom: 1rem; }
+h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 1.2rem; }
+h2 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 1rem; }
 h3 { font-size: 1.15rem; font-weight: 600; margin-bottom: 0.6rem; }
-p {
-  max-width: 68ch;
-  color: var(--text-dim);
-  margin-bottom: 1rem;
-  font-size: 0.95rem;
-}
+p { max-width: 68ch; color: var(--text-dim); margin-bottom: 1rem; font-size: 0.95rem; }
 strong { color: var(--text); font-weight: 600; }
-.hero {
-  padding: 4rem 0 3rem;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 4rem;
-}
+.hero { padding: 4rem 0 3rem; border-bottom: 1px solid var(--border); margin-bottom: 4rem; }
 .hero p { font-size: 1.1rem; max-width: 55ch; }
-.hero-math {
-  display: inline-block;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 1.3rem;
-  color: var(--accent);
-  background: var(--accent-dim2);
-  border: 1px solid var(--border-light);
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-sm);
-  margin: 1rem 0;
-}
-.card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 2rem;
-  margin-bottom: 1.5rem;
-  transition: border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
+.hero-math { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 1.3rem; color: var(--accent); background: var(--accent-dim2); border: 1px solid var(--border-light); padding: 0.5rem 1rem; border-radius: var(--radius-sm); margin: 1rem 0; }
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 1.5rem; transition: border-color 200ms; }
 .card:hover { border-color: var(--border-light); }
-.card-inner {
-  background: var(--bg-card-inner);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 1.5rem;
-}
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
 @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
-.conv-container { display: flex; flex-wrap: wrap; gap: 2rem; align-items: flex-start; }
-.conv-canvas-wrap { flex-shrink: 0; }
-.conv-canvas-wrap canvas {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  image-rendering: pixelated;
-}
-.conv-info { flex: 1; min-width: 200px; }
-.conv-controls { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
-.conv-controls button {
-  background: var(--bg-hover);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 6px 14px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 13px;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-.conv-controls button:hover { background: var(--border-light); }
-.conv-controls button.active {
-  background: var(--accent-dim);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.matrix {
-  display: inline-grid;
-  gap: 2px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-  background: var(--bg-card-inner);
-  padding: 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-}
-.matrix .cell {
-  width: 48px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 3px;
-  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-.matrix .cell.highlight { background: var(--accent-dim); color: var(--accent); font-weight: 600; }
-.matrix .cell.result-cell { background: rgba(45, 212, 191, 0.15); color: var(--accent); font-weight: 600; }
-.calc-inputs { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
-.calc-inputs label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--text-dim);
-  font-weight: 500;
-}
-.calc-inputs input {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 14px;
-  width: 100px;
-  transition: border-color 200ms;
-}
-.calc-inputs input:focus { outline: none; border-color: var(--accent); }
-.calc-btn {
-  background: var(--accent);
-  color: #000;
-  border: none;
-  padding: 8px 20px;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: 'Plus Jakarta Sans', sans-serif;
-}
-.calc-btn:hover { transform: scale(1.03); }
-.calc-btn:active { transform: scale(0.97); }
-.calc-result {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background: var(--accent-dim2);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-md);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 14px;
-  line-height: 1.8;
-}
-.calc-result .formula { color: var(--accent); }
-.calc-result .value { color: var(--text); font-weight: 600; }
-.softmax-inputs { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 1.5rem; }
-.softmax-input { display: flex; flex-direction: column; gap: 4px; }
-.softmax-input label { font-size: 12px; color: var(--text-dim); font-weight: 500; }
-.softmax-input input {
-  width: 80px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 14px;
-  text-align: center;
-  transition: border-color 200ms;
-}
-.softmax-input input:focus { outline: none; border-color: var(--accent); }
-.softmax-bars { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1.5rem; }
-.softmax-bar-row { display: flex; align-items: center; gap: 0.8rem; }
-.softmax-bar-label {
-  width: 50px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-  color: var(--text-dim);
-  text-align: right;
-  flex-shrink: 0;
-}
-.softmax-bar-track {
-  flex: 1;
-  height: 28px;
-  background: var(--bg-card-inner);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  border: 1px solid var(--border);
-  position: relative;
-}
-.softmax-bar-fill {
-  height: 100%;
-  border-radius: var(--radius-sm);
-  transition: width 400ms cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(90deg, var(--accent), #14b8a6);
-}
-.softmax-bar-value {
-  width: 70px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  color: var(--text-dim);
-  text-align: right;
-  flex-shrink: 0;
-}
-.quiz-question { margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border); }
-.quiz-question:last-child { border-bottom: none; }
-.quiz-q-text { font-weight: 600; margin-bottom: 1rem; font-size: 0.95rem; }
-.quiz-options { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
-.quiz-option {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 10px 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  background: transparent;
-  color: var(--text);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-  text-align: left;
-  width: 100%;
-}
-.quiz-option:hover:not(.disabled) { border-color: var(--border-light); background: var(--bg-hover); }
-.quiz-option.selected { border-color: var(--accent); background: var(--accent-dim); }
-.quiz-option.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.1); }
-.quiz-option.incorrect { border-color: var(--error); background: rgba(239, 68, 68, 0.1); }
-.quiz-option.disabled { cursor: default; }
-.quiz-option .opt-letter {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  font-size: 11px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-.quiz-feedback {
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  margin-top: 0.5rem;
-  display: none;
-}
-.quiz-feedback.show { display: block; }
-.quiz-feedback.correct {
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  color: var(--success);
-}
-.quiz-feedback.incorrect {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  color: var(--error);
-}
-.quiz-check-btn {
-  background: var(--bg-hover);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 13px;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 500;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  margin-top: 0.5rem;
-}
-.quiz-check-btn:hover { background: var(--border-light); }
-.quiz-check-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.quiz-score {
-  margin-top: 2rem;
-  padding: 1.5rem;
-  background: var(--bg-card-inner);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  text-align: center;
-}
-.quiz-score .score-num { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; color: var(--accent); }
-.quiz-score .score-label { font-size: 13px; color: var(--text-dim); margin-top: 0.25rem; }
-.step { position: relative; padding-left: 2.5rem; margin-bottom: 1.5rem; }
-.step::before {
-  content: attr(data-step);
-  position: absolute;
-  left: 0;
-  top: 0;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--accent);
-  background: var(--accent-dim);
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-}
-.code-block {
-  background: var(--bg-card-inner);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 1.2rem 1.5rem;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-  line-height: 1.8;
-  overflow-x: auto;
-  margin: 1rem 0;
-}
-.formula-block {
-  background: var(--accent-dim2);
-  border-left: 3px solid var(--accent);
-  padding: 1rem 1.5rem;
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  margin: 1rem 0;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 14px;
-  line-height: 2;
-}
-footer {
-  border-top: 1px solid var(--border);
-  padding: 2rem 0;
-  text-align: center;
-  color: var(--text-dimmer);
-  font-size: 12px;
-}
+.arch-diagram { background: var(--bg-card-inner); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 2rem; margin: 1.5rem 0; }
+.arch-blocks { display: flex; flex-direction: column; gap: 1.5rem; align-items: center; }
+.arch-layer { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+.arch-block { background: var(--accent-dim); border: 1px solid var(--accent); color: var(--accent); padding: 8px 14px; border-radius: var(--radius-sm); font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; }
+.arch-arrow { font-size: 24px; color: var(--text-dim); text-align: center; padding: 0.5rem 0; }
+.code-block { background: var(--bg-card-inner); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.2rem 1.5rem; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.8; overflow-x: auto; margin: 1rem 0; }
+.formula-block { background: var(--accent-dim2); border-left: 3px solid var(--accent); padding: 1rem 1.5rem; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin: 1rem 0; font-family: 'JetBrains Mono', monospace; font-size: 14px; line-height: 2; }
+footer { border-top: 1px solid var(--border); padding: 2rem 0; text-align: center; color: var(--text-dimmer); font-size: 12px; }
 .section-divider { height: 1px; background: var(--border); margin: 0 0 3rem; }
 </style>
 </head>
 <body>
 <nav>
   <div class="nav-inner">
-    <div class="logo">CNN Learning</div>
+    <div class="logo">Transformer Architecture</div>
     <ul class="nav-links">
-      <li><a href="#convolution">Convolution</a></li>
-      <li><a href="#weights">Weights &amp; Biases</a></li>
-      <li><a href="#logits">Logits</a></li>
-      <li><a href="#softmax">Softmax</a></li>
-      <li><a href="#toy">Toy Examples</a></li>
-      <li><a href="#quiz">Quiz</a></li>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#encoder">Encoder</a></li>
+      <li><a href="#attention">Attention</a></li>
+      <li><a href="#decoder">Decoder</a></li>
     </ul>
   </div>
 </nav>
 <main>
 <div class="hero">
-  <span class="eyebrow">Interactive Tutorial</span>
-  <h1>Understanding Convolutional Neural Networks</h1>
-  <p>A hands-on guide through the building blocks of CNNs: convolutions, weights, biases, logits, and the softmax function. Click around, tweak numbers, and see how the math works under the hood.</p>
-  <div class="hero-math">y = max(0, w·x + b)</div>
+  <span class="eyebrow">Architecture Deep Dive</span>
+  <h1>The Transformer Architecture</h1>
+  <p>The model that changed everything. No recurrence, no convolution — just attention. Learn how self-attention replaces recurrent neural networks as the backbone of modern AI.</p>
+  <div class="hero-math">Attention(Q, K, V) = softmax(QKᵀ / √dₖ) V</div>
 </div>
 
-<section id="convolution">
-  <span class="eyebrow">Core Concept</span>
-  <h2>What Is a Convolution?</h2>
-  <p>A convolution is a mathematical operation where a <strong>kernel</strong> (also called a filter) slides across an input matrix, computing element-wise products and summing them at each position. In CNNs, this operation detects local patterns like edges, textures, and shapes.</p>
-  <div class="card">
-    <h3>Interactive Convolution Demo</h3>
-    <p>See how a 3x3 kernel slides across a 5x5 input. Click the buttons below to change the kernel values and watch the output update in real time.</p>
-    <div class="conv-container">
-      <div class="conv-canvas-wrap">
-        <div style="font-size:12px;color:var(--text-dim);margin-bottom:6px;font-weight:600;">Input (5×5)</div>
-        <canvas id="convInputCanvas" width="200" height="200"></canvas>
-        <div style="font-size:12px;color:var(--text-dim);margin:12px 0 6px;font-weight:600;">Kernel (3×3)</div>
-        <canvas id="convKernelCanvas" width="120" height="120"></canvas>
-        <div class="conv-controls">
-          <button class="active" data-kernel="edge-h">Horizontal Edge</button>
-          <button data-kernel="edge-v">Vertical Edge</button>
-          <button data-kernel="sharpen">Sharpen</button>
-          <button data-kernel="blur">Blur</button>
-          <button data-kernel="sobel">Sobel</button>
+<section id="overview">
+  <span class="eyebrow">Big Picture</span>
+  <h2>Encoder-Decoder Structure</h2>
+  <div class="arch-diagram">
+    <div class="arch-blocks">
+      <div class="arch-layer"><span class="arch-block">Input Tokens</span></div>
+      <div class="arch-arrow">▼</div>
+      <div class="arch-layer">
+        <span class="arch-block">Embedding</span>
+        <span class="arch-block">+ Positional Encoding</span>
+      </div>
+      <div class="arch-arrow">▼</div>
+      <div class="arch-layer" style="border: 2px solid var(--accent); border-radius: 12px; padding: 1.5rem; background: var(--accent-dim2);">
+        <span style="color: var(--accent); font-weight: 600; font-size: 12px; margin-bottom: 0.5rem;">ENCODER (×6)</span>
+        <div class="arch-blocks">
+          <div class="arch-arrow">▼</div>
+          <div class="arch-layer"><span class="arch-block">Multi-Head Self-Attention</span></div>
+          <div class="arch-arrow">▼</div>
+          <div class="arch-layer"><span class="arch-block">Add & Norm</span></div>
+          <div class="arch-arrow">▼</div>
+          <div class="arch-layer"><span class="arch-block">Feed Forward (FFN)</span></div>
+          <div class="arch-arrow">▼</div>
+          <div class="arch-layer"><span class="arch-block">Add & Norm</span></div>
         </div>
       </div>
-      <div class="conv-info">
-        <div style="font-size:12px;color:var(--text-dim);margin-bottom:6px;font-weight:600;">Output (3×3)</div>
-        <canvas id="convOutputCanvas" width="180" height="180"></canvas>
-        <div id="convFormula" style="margin-top:1rem;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);line-height:1.6;"></div>
+      <div class="arch-arrow">▼</div>
+      <div class="arch-layer" style="border: 2px solid var(--warning); border-radius: 12px; padding: 1.5rem; background: rgba(245,158,11,0.05);">
+        <span style="color: var(--warning); font-weight: 600; font-size: 12px; margin-bottom: 0.5rem;">DECODER (×6)</span>
+        <div class="arch-blocks">
+          <div class="arch-arrow">▼</div>
+          <div class="arch-layer"><span class="arch-block">Masked Self-Attention</span></div>
+          <div class="arch-arrow">▼</div>
+          <div class="arch-layer"><span class="arch-block">Add & Norm</span></div>
+          <div class="arch-arrow">▼</div>
+          <div class="arch-layer"><span class="arch-block">Cross Attention</span></div>
+          <div class="arch-arrow">▼</div>
+          <div class="arch-layer"><span class="arch-block">Add & Norm</span></div>
+          <div class="arch-arrow">▼</div>
+          <div class="arch-layer"><span class="arch-block">Feed Forward (FFN)</span></div>
+          <div class="arch-arrow">▼</div>
+          <div class="arch-layer"><span class="arch-block">Add & Norm</span></div>
+        </div>
       </div>
+      <div class="arch-arrow">▼</div>
+      <div class="arch-layer"><span class="arch-block">Linear → Embedding Dim</span></div>
+      <div class="arch-arrow">▼</div>
+      <div class="arch-layer"><span class="arch-block">Softmax → Probabilities</span></div>
+      <div class="arch-arrow">▼</div>
+      <div class="arch-layer"><span class="arch-block">Output Tokens</span></div>
     </div>
   </div>
+  <p>The original Transformer (Vaswani et al., 2017) uses a stack of 6 encoder layers and 6 decoder layers. Each layer contains residual connections and layer normalization. The key innovation is <strong>self-attention</strong>, which lets every token attend to every other token in the sequence.</p>
+</section>
+
+<div class="section-divider"></div>
+
+<section id="attention">
+  <span class="eyebrow">Core Mechanism</span>
+  <h2>Multi-Head Self-Attention</h2>
   <div class="card">
-    <h3>Key Properties</h3>
-    <div class="grid-3">
-      <div><h3>Stride</h3><p>How many pixels the kernel moves at each step. Stride=1 moves one pixel. Stride=2 jumps two. Larger stride = smaller output.</p></div>
-      <div><h3>Padding</h3><p>Extra border of zeros around the input. "Same" padding keeps the output the same size as input. "Valid" means no padding.</p></div>
-      <div><h3>Channels</h3><p>RGB images have 3 channels. Each channel gets its own kernel. Output channels come from different kernels applied to all input channels.</p></div>
+    <h3>How It Works</h3>
+    <p>Each token produces three vectors: <strong>Query</strong> (what am I looking for), <strong>Key</strong> (what do I contain), and <strong>Value</strong> (what I actually provide). The attention score between any two tokens is computed as the dot product of their Query and Key vectors, scaled by the square root of the dimension.</p>
+  </div>
+  <div class="formula-block">
+    Attention(Q, K, V) = softmax(Q · Kᵀ / √dₖ) · V
+  </div>
+  <div class="card">
+    <h3>Multi-Head Variant</h3>
+    <p>Instead of computing attention once with a single head, we learn <strong>h different projection matrices</strong> (head-specific Q, K, V), compute attention in parallel on each head, concatenate the results, and project again.</p>
+    <div class="code-block">
+MultiHead(X) = Concat(head₁, ..., headₙ) · W<sub>O</sub><br>
+where head<sub>i</sub> = Attention(X · W<sub>Q</sub><sup>i</sup>, X · W<sub>K</sub><sup>i</sup>, X · W<sub>V</sub><sup>i</sup>)<br><br>
+Typical config: d_model = 512, h = 8, d<sub>k</sub> = d<sub>v</sub> = 64
     </div>
   </div>
 </section>
 
 <div class="section-divider"></div>
 
-<section id="weights">
-  <span class="eyebrow">Learnable Parameters</span>
-  <h2>Weights &amp; Biases</h2>
-  <p>Weights determine how strongly each input feature influences the output. Biases shift the activation function, allowing the model to fit data that doesn't pass through the origin. During training, backpropagation adjusts both.</p>
-  <div class="formula-block"><strong>Pre-activation (logit):</strong> z = w₁x₁ + w₂x₂ + ... + wₙxₙ + b<br><strong>ReLU activation:</strong> a = max(0, z)</div>
+<section id="encoder">
+  <span class="eyebrow">Building Blocks</span>
+  <h2>Encoder Layer</h2>
   <div class="card">
-    <h3>Weighted Sum Calculator</h3>
-    <p>Enter input values, weights, and a bias. Click "Compute" to see the step-by-step result.</p>
-    <div class="card-inner">
-      <div class="calc-inputs" id="wbInputs">
-        <label>Input x₁ <input type="number" id="wb_x1" value="1" step="0.1"></label>
-        <label>Weight w₁ <input type="number" id="wb_w1" value="2" step="0.1"></label>
-        <label>Input x₂ <input type="number" id="wb_x2" value="3" step="0.1"></label>
-        <label>Weight w₂ <input type="number" id="wb_w2" value="-1" step="0.1"></label>
-        <label>Input x₃ <input type="number" id="wb_x3" value="4" step="0.1"></label>
-        <label>Weight w₃ <input type="number" id="wb_w3" value="0.5" step="0.1"></label>
-        <label>Bias b <input type="number" id="wb_b" value="0.5" step="0.1"></label>
-      </div>
-      <div style="margin-top:1rem;">
-        <button class="calc-btn" onclick="computeWeights()">Compute</button>
-        <button class="calc-btn" style="background:var(--bg-hover);color:var(--text);border:1px solid var(--border);margin-left:0.5rem;" onclick="resetWBCalculator()">Reset</button>
-      </div>
-      <div id="wbResult" class="calc-result" style="display:none;"></div>
+    <h3>Stack Structure</h3>
+    <div class="formula-block">
+Encoder(x) = Sublayer(x + LN(Sublayer(x)))<br><br>
+Sublayer₁ = MultiHeadSelfAttention(x)<br>
+Sublayer₂ = PositionWiseFFN(x)
     </div>
-  </div>
-  <div class="card">
-    <h3>How Weights Learn</h3>
-    <div class="step" data-step="1"><strong>Forward pass:</strong> Compute z = wx + b, then apply activation (e.g., ReLU: max(0, z)).</div>
-    <div class="step" data-step="2"><strong>Loss:</strong> Compare the prediction to the true label using cross-entropy or MSE.</div>
-    <div class="step" data-step="3"><strong>Backward pass:</strong> Compute gradients ∂L/∂w and ∂L/∂b using the chain rule.</div>
-    <div class="step" data-step="4"><strong>Update:</strong> Adjust parameters: w = w − η·∂L/∂w, where η is the learning rate.</div>
-    <div class="code-block" style="margin-top:1rem;">z = (0.5)(2.0) + (-1.0)(3.0) + (0.5)(4.0) + 0.5<br>z = 1.0 − 3.0 + 2.0 + 0.5<br>z = 0.5<br>output = ReLU(0.5) = 0.5</div>
-  </div>
-</section>
-
-<div class="section-divider"></div>
-
-<section id="logits">
-  <span class="eyebrow">Pre-Softmax Scores</span>
-  <h2>What Are Logits?</h2>
-  <p>Logits are the raw, unnormalized scores output by the final layer of a neural network — before softmax is applied. They can be any real number (positive or negative) and don't sum to 1.</p>
-  <div class="formula-block"><strong>Logit</strong> = raw score from the network (no activation)<br><strong>Probability</strong> = softmax(logit) → values in [0, 1] that sum to 1<br><strong>Prediction</strong> = argmax(probability) → class with highest probability</div>
-  <div class="card">
-    <h3>Logits vs Probabilities</h3>
-    <p>Logits are arbitrary real numbers. Softmax converts them into proper probabilities. See the difference below:</p>
-    <div class="card-inner" style="overflow-x:auto;">
-      <table style="width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:13px;">
-        <thead>
-          <tr style="border-bottom:1px solid var(--border);">
-            <th style="text-align:left;padding:8px 12px;color:var(--text-dim);">Class</th>
-            <th style="text-align:center;padding:8px 12px;color:var(--text-dim);">Logit</th>
-            <th style="text-align:center;padding:8px 12px;color:var(--text-dim);">Raw exp(z)</th>
-            <th style="text-align:center;padding:8px 12px;color:var(--text-dim);">Softmax P</th>
-          </tr>
-        </thead>
-        <tbody id="logitsTable"></tbody>
-      </table>
-    </div>
-  </div>
-  <div class="card">
-    <h3>Toy Example: Image Classification</h3>
-    <p>Suppose a CNN classifies images as cat, dog, or bird. The last layer outputs 3 logits:</p>
-    <div class="formula-block">z<sub>cat</sub> = 2.0, z<sub>dog</sub> = 1.0, z<sub>bird</sub> = 0.5<br><br>Before softmax, the network "prefers" cat most (highest logit). But logits aren't probabilities — they could be negative, and they don't sum to 1. Softmax fixes that.</div>
-  </div>
-</section>
-
-<div class="section-divider"></div>
-
-<section id="softmax">
-  <span class="eyebrow">Normalization Function</span>
-  <h2>The Softmax Function</h2>
-  <p>Softmax converts raw logits into a probability distribution. It exponentiates each logit (so all outputs are positive) and normalizes so they sum to 1. This makes the output interpretable as class probabilities.</p>
-  <div class="formula-block">softmax(zᵢ) = e<sup>zᵢ</sup> / Σ e<sup>zⱼ</sup> &nbsp; (for all classes j)</div>
-  <div class="card">
-    <h3>Softmax Visualizer</h3>
-    <p>Enter logits for up to 5 classes. The bar chart shows the resulting softmax probabilities.</p>
-    <div class="card-inner">
-      <div class="softmax-inputs" id="softmaxInputs">
-        <div class="softmax-input"><label>Class 0</label><input type="number" value="2.0" step="0.1" class="softmax-logit" onchange="computeSoftmax()" oninput="computeSoftmax()"></div>
-        <div class="softmax-input"><label>Class 1</label><input type="number" value="1.0" step="0.1" class="softmax-logit" onchange="computeSoftmax()" oninput="computeSoftmax()"></div>
-        <div class="softmax-input"><label>Class 2</label><input type="number" value="0.5" step="0.1" class="softmax-logit" onchange="computeSoftmax()" oninput="computeSoftmax()"></div>
-        <div class="softmax-input"><label>Class 3</label><input type="number" value="-1.0" step="0.1" class="softmax-logit" onchange="computeSoftmax()" oninput="computeSoftmax()"></div>
-        <div class="softmax-input"><label>Class 4</label><input type="number" value="0.0" step="0.1" class="softmax-logit" onchange="computeSoftmax()" oninput="computeSoftmax()"></div>
-      </div>
-      <div class="softmax-bars" id="softmaxBars"></div>
-      <div id="softmaxDetail" style="margin-top:1.5rem;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);line-height:1.8;"></div>
-    </div>
-  </div>
-  <div class="card">
-    <h3>Why Softmax Matters</h3>
+    <p>Each sublayer has two key properties: (1) <strong>Residual connections</strong> around it (x + sublayer) and (2) <strong>Layer Normalization</strong> after each addition. This deep residual path enables gradient flow through all 6 encoder layers.</p>
     <div class="grid-2">
-      <div><h3>Strength Effects</h3><p>Softmax amplifies differences between logits. A small gap like 2.0 vs 1.0 becomes 73% vs 27%. A larger gap like 5.0 vs 0.0 becomes 99.3% vs 0.07%. This is why high-confidence predictions can be overconfident.</p></div>
-      <div><h3>Temperature Scaling</h3><p>Dividing logits by a temperature T before softmax softens or sharpens the distribution. High T → uniform probabilities (more uncertain). Low T → sharper peaks (more confident). T = 1 is standard.</p></div>
+      <div class="card-inner">
+        <h3>Position-wise FFN</h3>
+        <div class="formula-block">
+FFN(x) = max(0, x · W₁) · W₂ + b₂
+        </div>
+        <p style="font-size: 12px;">Two linear layers with ReLU activation. Widened internally (d_ff = 2048 in original).</p>
+      </div>
+      <div class="card-inner">
+        <h3>Positional Encoding</h3>
+        <div class="formula-block">
+PE(pos, 2i) = sin(pos / 10000^(2i/d))<br>
+PE(pos, 2i+1) = cos(pos / 10000^(2i/d))
+        </div>
+        <p style="font-size: 12px;">Sinusoidal positions encode relative position without parameters. Different frequencies per dimension.</p>
+      </div>
     </div>
   </div>
 </section>
 
 <div class="section-divider"></div>
 
-<section id="toy">
-  <span class="eyebrow">Worked Examples</span>
-  <h2>Toy Calculation Examples</h2>
-  <p>Let's walk through complete end-to-end calculations with small numbers you can verify by hand.</p>
+<section id="decoder">
+  <span class="eyebrow">Sequence Generation</span>
+  <h2>Decoder Layer</h2>
   <div class="card">
-    <h3>Example 1: Single Neuron Forward Pass</h3>
-    <p><strong>Input:</strong> x = [1, 2, 3], <strong>Weights:</strong> w = [0.5, -1.0, 0.8], <strong>Bias:</strong> b = 0.3</p>
-    <div class="card-inner">
-      <div class="step" data-step="1"><strong>Step 1:</strong> Compute dot product</div>
-      <div class="code-block">z = (0.5 × 1) + (−1.0 × 2) + (0.8 × 3)<br>z = 0.5 − 2.0 + 2.4<br>z = 0.9</div>
-      <div class="step" data-step="2"><strong>Step 2:</strong> Add bias</div>
-      <div class="code-block">z = 0.9 + 0.3 = 1.2</div>
-      <div class="step" data-step="3"><strong>Step 3:</strong> Apply ReLU</div>
-      <div class="code-block">output = ReLU(1.2) = max(0, 1.2) = 1.2</div>
+    <h3>Three Sublayers</h3>
+    <div class="formula-block">
+Decoder(x) = Sublayer₁(x + LN(Sublayer₁(x)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sublayer₂(x + LN(Sublayer₂(x)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sublayer₃(x + LN(Sublayer₃(x)))
     </div>
-  </div>
-  <div class="card">
-    <h3>Example 2: 2×2 Convolution (Valid)</h3>
-    <p><strong>Input:</strong> 4×4 matrix, <strong>Kernel:</strong> 2×2, <strong>Stride:</strong> 1, <strong>Padding:</strong> 0 (valid)</p>
-    <div class="card-inner">
-      <div style="margin-bottom:1rem;">
-        <div style="font-size:12px;color:var(--text-dim);margin-bottom:4px;">Input:</div>
-        <div class="matrix" style="grid-template-columns:repeat(4,48px);">
-          <div class="cell">1</div><div class="cell">3</div><div class="cell">2</div><div class="cell">5</div>
-          <div class="cell">4</div><div class="cell">1</div><div class="cell">3</div><div class="cell">2</div>
-          <div class="cell">2</div><div class="cell">5</div><div class="cell">1</div><div class="cell">3</div>
-          <div class="cell">3</div><div class="cell">2</div><div class="cell">4</div><div class="cell">1</div>
-        </div>
+    <div class="grid-3" style="margin-top: 1rem;">
+      <div class="card-inner">
+        <h3>Sublayer₁: Masked MHA</h3>
+        <p style="font-size: 12px;">Self-attention where each position can only attend to earlier positions (causal mask). Prevents seeing future tokens during training.</p>
       </div>
-      <div style="margin-bottom:1rem;">
-        <div style="font-size:12px;color:var(--text-dim);margin-bottom:4px;">Kernel:</div>
-        <div class="matrix" style="grid-template-columns:repeat(2,48px);">
-          <div class="cell highlight">1</div><div class="cell highlight">0</div>
-          <div class="cell highlight">0</div><div class="cell highlight">−1</div>
-        </div>
+      <div class="card-inner">
+        <h3>Sublayer₂: Cross Attention</h3>
+        <p style="font-size: 12px;">Queries from decoder, Keys/Values from encoder output. Bridges encoder and decoder — "what from the input should I attend to?"</p>
       </div>
-      <div class="step" data-step="1"><strong>Top-left (row 0, col 0):</strong> 1×1 + 3×0 + 4×0 + 1×(−1) = 1 − 1 = <strong>0</strong></div>
-      <div class="step" data-step="2"><strong>Top-middle (row 0, col 1):</strong> 3×1 + 2×0 + 1×0 + 3×(−1) = 3 − 3 = <strong>0</strong></div>
-      <div class="step" data-step="3"><strong>Top-right (row 0, col 2):</strong> 2×1 + 5×0 + 3×0 + 2×(−1) = 2 − 2 = <strong>0</strong></div>
-      <div class="step" data-step="4"><strong>Middle-left (row 1, col 0):</strong> 4×1 + 1×0 + 2×0 + 5×(−1) = 4 − 5 = <strong>−1</strong></div>
-      <div class="step" data-step="5"><strong>Center (row 1, col 1):</strong> 1×1 + 3×0 + 5×0 + 1×(−1) = 1 − 1 = <strong>0</strong></div>
-      <div class="step" data-step="6"><strong>Middle-right (row 1, col 2):</strong> 3×1 + 2×0 + 1×0 + 3×(−1) = 3 − 3 = <strong>0</strong></div>
-      <div class="step" data-step="7"><strong>Bottom-left (row 2, col 0):</strong> 2×1 + 5×0 + 3×0 + 2×(−1) = 2 − 2 = <strong>0</strong></div>
-      <div class="step" data-step="8"><strong>Bottom-middle (row 2, col 1):</strong> 5×1 + 1×0 + 2×0 + 4×(−1) = 5 − 4 = <strong>1</strong></div>
-      <div class="step" data-step="9"><strong>Bottom-right (row 2, col 2):</strong> 1×1 + 3×0 + 4×0 + 1×(−1) = 1 − 1 = <strong>0</strong></div>
-      <div style="margin-top:1rem;"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px;">Output (3×3):</div>
-        <div class="matrix" style="grid-template-columns:repeat(3,48px);">
-          <div class="cell result-cell">0</div><div class="cell result-cell">0</div><div class="cell result-cell">0</div>
-          <div class="cell result-cell">−1</div><div class="cell result-cell">0</div><div class="cell result-cell">0</div>
-          <div class="cell result-cell">0</div><div class="cell result-cell">1</div><div class="cell result-cell">0</div>
-        </div>
+      <div class="card-inner">
+        <h3>Sublayer₃: FFN</h3>
+        <p style="font-size: 12px;">Same position-wise FFN as the encoder. Processes the attended information into a representation for the next layer.</p>
       </div>
     </div>
   </div>
   <div class="card">
-    <h3>Example 3: Full Forward Pass (Logits → Softmax → Prediction)</h3>
-    <p><strong>Scenario:</strong> A CNN classifies an image into 3 categories: cat, dog, bird.</p>
-    <div class="card-inner">
-      <div class="step" data-step="1"><strong>Last layer logits:</strong></div>
-      <div class="code-block">z_cat = 2.5<br>z_dog = 1.2<br>z_bird = 0.1</div>
-      <div class="step" data-step="2"><strong>Apply softmax:</strong></div>
-      <div class="code-block">e^2.5 = 12.182<br>e^1.2 = 3.320<br>e^0.1 = 1.105<br>sum = 16.607<br><br>P(cat) = 12.182 / 16.607 = 0.7335 (73.4%)<br>P(dog) = 3.320 / 16.607 = 0.2000 (20.0%)<br>P(bird) = 1.105 / 16.607 = 0.0665 (6.7%)</div>
-      <div class="step" data-step="3"><strong>Prediction:</strong> argmax = cat (highest probability at 73.4%)</div>
-    </div>
-  </div>
-  <div class="card">
-    <h3>Example 4: ReLU vs Sigmoid vs Tanh</h3>
-    <p>Different activation functions transform the same input differently:</p>
-    <div class="card-inner">
-      <div class="code-block" id="activationTable" style="white-space:pre;font-size:12px;line-height:1.7;"></div>
+    <h3>Causal Mask Example</h3>
+    <p>With mask = -∞ for future positions, softmax of those becomes 0, effectively blocking them:</p>
+    <div class="code-block">
+Position 1: [1, 0, 0, 0, 0]  (can attend to itself only)<br>
+Position 2: [1, 1, 0, 0, 0]  (self + position 1)<br>
+Position 3: [1, 1, 1, 0, 0]  (self + first two)<br>
+...
     </div>
   </div>
 </section>
 
-<div class="section-divider"></div>
-
-<section id="quiz">
-  <span class="eyebrow">Test Your Knowledge</span>
-  <h2>Interactive Quiz</h2>
-  <p>Select the best answer for each question. Click "Check Answer" to see if you're right and why.</p>
-  <div class="card">
-    <div id="quizContainer"></div>
-    <div class="quiz-score" id="quizScore" style="display:none;"><div class="score-num" id="scoreNum">0/0</div><div class="score-label">Correct</div></div>
-  </div>
-</section>
+<footer>
+  Built by Hermes Agent · Interactive AI Architecture Learning
+</footer>
 </main>
-<footer>Built as an interactive learning tool for CNN fundamentals. All examples use toy numbers designed for hand-verification.</footer>
-
-<script>
-(function() {
-  'use strict';
-  
-  // ===== GLOBALS =====
-  const INPUT_5X5 = [[2,5,8,3,1],[7,1,4,6,2],[3,9,5,2,8],[1,4,7,3,6],[5,2,1,8,4]];
-  const KERNELS = {
-    'edge-h': [[-1,0,1],[-1,0,1],[-1,0,1]],
-    'edge-v': [[-1,-1,-1],[0,0,0],[1,1,1]],
-    'sharpen': [[0,-1,0],[-1,5,-1],[0,-1,0]],
-    'blur': [[1/9,1/9,1/9],[1/9,1/9,1/9],[1/9,1/9,1/9]],
-    'sobel': [[-1,0,1],[-2,0,2],[-1,0,1]]
-  };
-  let currentKernel = 'edge-h';
-  
-  let quizAnswered = {};
-  let quizCorrect = 0;
-  let quizTotal = 0;
-  
-  const QUIZ_DATA = [
-    {
-      q: "What does a convolution kernel do when it slides across an image?",
-      options: [
-        "It copies the image to a new location",
-        "It computes element-wise products with the input and sums them at each position",
-        "It randomly changes pixel values",
-        "It divides the image into equal-sized non-overlapping regions"
-      ],
-      correct: 1,
-      explanation: "A kernel slides across the input, computing element-wise multiplications and summing them to produce each output value. This detects patterns like edges or textures."
-    },
-    {
-      q: "If a CNN has stride=2 and receives a 7×7 input with a 3×3 kernel and no padding, what is the output size?",
-      options: ["5×5", "4×4", "3×3", "6×6"],
-      correct: 2,
-      explanation: "Output size = floor((input_size - kernel_size) / stride) + 1 = floor((7 - 3) / 2) + 1 = floor(2) + 1 = 3. So the output is 3×3."
-    },
-    {
-      q: "What is the output of ReLU(x) when x = −3.7?",
-      options: ["−3.7", "0", "3.7", "1 / (1 + e^3.7)"],
-      correct: 1,
-      explanation: "ReLU(x) = max(0, x). Since −3.7 < 0, ReLU(−3.7) = max(0, −3.7) = 0."
-    },
-    {
-      q: "What do logits represent in a neural network?",
-      options: [
-        "Probability values between 0 and 1",
-        "The final predicted class label",
-        "Raw, unnormalized scores before applying softmax",
-        "The gradients computed during backpropagation"
-      ],
-      correct: 2,
-      explanation: "Logits are the raw output of the last linear layer — unnormalized real numbers that can be positive or negative. Softmax converts them into probabilities."
-    },
-    {
-      q: "Given logits z = [3.0, 1.0, −1.0], which class gets the highest softmax probability?",
-      options: ["Class 0 (z=3.0)", "Class 1 (z=1.0)", "Class 2 (z=−1.0)", "All classes have equal probability"],
-      correct: 0,
-      explanation: "Softmax is monotonically increasing — the highest logit always gets the highest probability. Class 0 with z=3.0 has e^3.0 ≈ 20.09, the largest exponent."
-    },
-    {
-      q: "In softmax, why do we compute e^z_i before normalizing?",
-      options: [
-        "To make the values sum to 1 automatically",
-        "To ensure all outputs are positive (since exponentials are always > 0)",
-        "To reduce computational complexity",
-        "To prevent the vanishing gradient problem"
-      ],
-      correct: 1,
-      explanation: "Exponentiating ensures all values are positive (e^z > 0 for any real z). After exponentiation, dividing by the sum gives a valid probability distribution that sums to 1."
-    },
-    {
-      q: "What role does the bias term play in a neuron?",
-      options: [
-        "It controls the learning rate during training",
-        "It shifts the activation function left or right, allowing the model to fit data that doesn't pass through the origin",
-        "It prevents overfitting by regularizing weights",
-        "It normalizes the input features"
-      ],
-      correct: 1,
-      explanation: "The bias b shifts the activation function. Without it, the model could only learn functions passing through the origin, limiting its expressiveness."
-    },
-    {
-      q: "A 28×28 grayscale image passes through a convolution with 16 filters of size 5×5, stride 1, padding 2. What is the output shape?",
-      options: ["16 × 24 × 24", "16 × 28 × 28", "5 × 5 × 16", "28 × 28 × 16"],
-      correct: 1,
-      explanation: "With padding=2, the output spatial size stays the same: floor((28 + 2×2 − 5) / 1) + 1 = 28. There are 16 filters, so the output is 16×28×28 (channels × height × width)."
-    },
-    {
-      q: "What happens to the softmax output if you double all the logits?",
-      options: [
-        "The probabilities stay the same",
-        "The probabilities become more uniform (closer to equal)",
-        "The probabilities become more extreme (higher for the largest, lower for the rest)",
-        "The output becomes invalid"
-      ],
-      correct: 2,
-      explanation: "Doubling logits is like temperature scaling with T=0.5 — it sharpens the distribution. The gap between the largest and smallest exponentials grows, so the max class gets even higher probability and others drop further."
-    },
-    {
-      q: "In the formula softmax(z_i) = e^z_i / Σ e^z_j, what happens when two logits are equal, e.g., z₁ = z₂ = 2.0?",
-      options: [
-        "Both get probability 0",
-        "Both get the same probability contribution",
-        "The larger one gets more probability",
-        "The formula is undefined"
-      ],
-      correct: 1,
-      explanation: "If z₁ = z₂, then e^z₁ = e^z₂, so both contribute equally to the sum and receive the same probability. Equal logits always produce equal softmax probabilities."
-    }
-  ];
-
-  // ===== CONVOLUTION VISUALIZATION =====
-  function computeConvolution(input, kernel) {
-    const ih = input.length, iw = input[0].length;
-    const kh = kernel.length, kw = kernel[0].length;
-    const oh = ih - kh + 1, ow = iw - kw + 1;
-    const output = [];
-    for (let i = 0; i < oh; i++) {
-      output[i] = [];
-      for (let j = 0; j < ow; j++) {
-        let sum = 0;
-        for (let ki = 0; ki < kh; ki++) {
-          for (let kj = 0; kj < kw; kj++) {
-            sum += input[i + ki][j + kj] * kernel[ki][kj];
-          }
-        }
-        output[i][j] = sum;
-      }
-    }
-    return output;
-  }
-
-  function drawGrid(canvas, matrix, cellW, cellH) {
-    const ctx = canvas.getContext('2d');
-    const rows = matrix.length;
-    const cols = matrix[0].length;
-    canvas.width = cols * cellW;
-    canvas.height = rows * cellH;
-    const minVal = Math.min(...matrix.flat());
-    const maxVal = Math.max(...matrix.flat());
-    const range = maxVal - minVal || 1;
-    for (let i = 0; i < rows; i++) {
-      for (let j = 0; j < cols; j++) {
-        const val = matrix[i][j];
-        const norm = (val - minVal) / range;
-        const brightness = Math.round(20 + norm * 180);
-        ctx.fillStyle = 'rgb(' + brightness + ',' + brightness + ',' + (brightness + 2) + ')';
-        ctx.fillRect(j * cellW, i * cellH, cellW - 1, cellH - 1);
-        if (norm > 0.5) {
-          ctx.fillStyle = 'rgba(45, 212, 191, 0.2)';
-          ctx.fillRect(j * cellW, i * cellH, cellW - 1, cellH - 1);
-        }
-        ctx.fillStyle = norm > 0.5 ? '#0a0a0a' : '#e4e4e4';
-        ctx.font = Math.min(14, cellW / 4) + "px 'JetBrains Mono', monospace";
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(Math.round(val * 100) / 100, j * cellW + cellW / 2, i * cellH + cellH / 2);
-      }
-    }
-  }
-
-  function updateConvolution() {
-    const output = computeConvolution(INPUT_5X5, KERNELS[currentKernel]);
-    drawGrid(document.getElementById('convInputCanvas'), INPUT_5X5, 40, 40);
-    drawGrid(document.getElementById('convKernelCanvas'), KERNELS[currentKernel], 40, 40);
-    drawGrid(document.getElementById('convOutputCanvas'), output, 60, 60);
-    const kh = KERNELS[currentKernel].length;
-    const kw = KERNELS[currentKernel][0].length;
-    const ih = INPUT_5X5.length, iw = INPUT_5X5[0].length;
-    const oh = ih - kh + 1, ow = iw - kw + 1;
-    const sampleI = 0, sampleJ = 0;
-    let formulaParts = [];
-    for (let ki = 0; ki < kh; ki++) {
-      for (let kj = 0; kj < kw; kj++) {
-        formulaParts.push(INPUT_5X5[sampleI + ki][sampleJ + kj] + '×' + KERNELS[currentKernel][ki][kj]);
-      }
-    }
-    document.getElementById('convFormula').innerHTML =
-      '<strong>Example (0,0):</strong> ' + formulaParts.join(' + ') + ' = ' + output[0][0] + '<br>' +
-      '<strong>Output size:</strong> ' + oh + '×' + ow + ' (from ' + ih + '×' + iw + ' with ' + kh + '×' + kw + ' kernel, stride=1, padding=0)';
-  }
-
-  document.querySelectorAll('[data-kernel]').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      document.querySelectorAll('[data-kernel]').forEach(function(b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-      currentKernel = btn.dataset.kernel;
-      updateConvolution();
-    });
-  });
-
-  // ===== WEIGHT/BIAS CALCULATOR =====
-  window.computeWeights = function() {
-    const x1 = parseFloat(document.getElementById('wb_x1').value) || 0;
-    const x2 = parseFloat(document.getElementById('wb_x2').value) || 0;
-    const x3 = parseFloat(document.getElementById('wb_x3').value) || 0;
-    const w1 = parseFloat(document.getElementById('wb_w1').value) || 0;
-    const w2 = parseFloat(document.getElementById('wb_w2').value) || 0;
-    const w3 = parseFloat(document.getElementById('wb_w3').value) || 0;
-    const b = parseFloat(document.getElementById('wb_b').value) || 0;
-    const wx1 = w1 * x1;
-    const wx2 = w2 * x2;
-    const wx3 = w3 * x3;
-    const z = wx1 + wx2 + wx3 + b;
-    const reluZ = Math.max(0, z);
-    const result = document.getElementById('wbResult');
-    result.style.display = 'block';
-    result.innerHTML =
-      '<div><span class="formula">Step 1: Weighted sum</span></div>' +
-      '<div>w₁x₁ = ' + w1 + ' × ' + x1 + ' = <span class="value">' + wx1.toFixed(2) + '</span></div>' +
-      '<div>w₂x₂ = ' + w2 + ' × ' + x2 + ' = <span class="value">' + wx2.toFixed(2) + '</span></div>' +
-      '<div>w₃x₃ = ' + w3 + ' × ' + x3 + ' = <span class="value">' + wx3.toFixed(2) + '</span></div>' +
-      '<div style="margin-top:0.5rem;"><span class="formula">Step 2: Add bias</span></div>' +
-      '<div>z = ' + wx1.toFixed(2) + ' + ' + wx2.toFixed(2) + ' + ' + wx3.toFixed(2) + ' + ' + b + ' = <span class="value">' + z.toFixed(4) + '</span></div>' +
-      '<div style="margin-top:0.5rem;"><span class="formula">Step 3: ReLU activation</span></div>' +
-      '<div>ReLU(' + z.toFixed(4) + ') = max(0, ' + z.toFixed(4) + ') = <span class="value">' + reluZ.toFixed(4) + '</span></div>';
-  };
-
-  window.resetWBCalculator = function() {
-    document.getElementById('wb_x1').value = '1';
-    document.getElementById('wb_x2').value = '3';
-    document.getElementById('wb_x3').value = '4';
-    document.getElementById('wb_w1').value = '2';
-    document.getElementById('wb_w2').value = '-1';
-    document.getElementById('wb_w3').value = '0.5';
-    document.getElementById('wb_b').value = '0.5';
-    document.getElementById('wbResult').style.display = 'none';
-  };
-
-  // ===== SOFTMAX =====
-  window.computeSoftmax = function() {
-    const inputs = document.querySelectorAll('.softmax-logit');
-    const logits = [];
-    inputs.forEach(function(inp) {
-      const v = parseFloat(inp.value);
-      logits.push(isNaN(v) ? 0 : v);
-    });
-    const n = logits.length;
-    const exps = logits.map(function(z) { return Math.exp(z); });
-    const sumExps = exps.reduce(function(a, b) { return a + b; }, 0);
-    const probs = exps.map(function(e) { return e / sumExps; });
-    const barsContainer = document.getElementById('softmaxBars');
-    barsContainer.innerHTML = '';
-    logits.forEach(function(z, i) {
-      const row = document.createElement('div');
-      row.className = 'softmax-bar-row';
-      const pct = (probs[i] * 100).toFixed(1);
-      row.innerHTML = '<div class="softmax-bar-label">Class ' + i + '</div><div class="softmax-bar-track"><div class="softmax-bar-fill" style="width: ' + pct + '%"></div></div><div class="softmax-bar-value">' + pct + '%</div>';
-      barsContainer.appendChild(row);
-    });
-    const detail = document.getElementById('softmaxDetail');
-    let html = '<strong>Computation for ' + n + ' classes:</strong><br>';
-    for (let i = 0; i < n; i++) {
-      html += 'e<sup>' + logits[i] + '</sup> = ' + exps[i].toFixed(4) + ', P(' + i + ') = ' + exps[i].toFixed(4) + ' / ' + sumExps.toFixed(4) + ' = <strong>' + probs[i].toFixed(4) + '</strong><br>';
-    }
-    html += '<br>Sum of probabilities = ' + probs.reduce(function(a, b) { return a + b; }, 0).toFixed(4);
-    detail.innerHTML = html;
-  };
-
-  // ===== LOGITS TABLE =====
-  function buildLogitsTable() {
-    const classes = ['Cat', 'Dog', 'Bird', 'Fish', 'Horse'];
-    const logits = [2.5, 1.2, 0.1, -0.5, 0.8];
-    const tbody = document.getElementById('logitsTable');
-    const exps = logits.map(function(z) { return Math.exp(z); });
-    const sumExps = exps.reduce(function(a, b) { return a + b; }, 0);
-    const probs = exps.map(function(e) { return e / sumExps; });
-    tbody.innerHTML = '';
-    classes.forEach(function(name, i) {
-      const tr = document.createElement('tr');
-      tr.style.borderBottom = '1px solid var(--border)';
-      tr.innerHTML = '<td style="padding:8px 12px;">' + name + '</td><td style="text-align:center;">' + logits[i].toFixed(1) + '</td><td style="text-align:center;color:var(--text-dim);">' + exps[i].toFixed(3) + '</td><td style="text-align:center;font-weight:600;color:var(--accent);">' + (probs[i] * 100).toFixed(1) + '%</td>';
-      tbody.appendChild(tr);
-    });
-  }
-
-  // ===== ACTIVATION TABLE =====
-  function buildActivationTable() {
-    const inputs = [2, 0, -2, 1, -1, 0.5];
-    const el = document.getElementById('activationTable');
-    let html = 'x'.padEnd(8) + '  ReLU(x)'.padEnd(14) + '  Sigmoid(x)'.padEnd(18) + '  TanH(x)'.padEnd(16) + '\n';
-    html += '─'.repeat(56) + '\n';
-    inputs.forEach(function(x) {
-      const relu = Math.max(0, x);
-      const sigmoid = 1 / (1 + Math.exp(-x));
-      const tanh = Math.tanh(x);
-      html += x.toString().padEnd(8) + '  ' + relu.toFixed(4).padEnd(14) + '  ' + sigmoid.toFixed(4).padEnd(18) + '  ' + tanh.toFixed(4).padEnd(16) + '\n';
-    });
-    el.textContent = html;
-  }
-
-  // ===== QUIZ =====
-  function buildQuiz() {
-    quizAnswered = {};
-    quizCorrect = 0;
-    quizTotal = 0;
-    const container = document.getElementById('quizContainer');
-    container.innerHTML = '';
-    document.getElementById('quizScore').style.display = 'none';
-
-    QUIZ_DATA.forEach(function(q, qi) {
-      const div = document.createElement('div');
-      div.className = 'quiz-question';
-      div.dataset.index = qi;
-      div.dataset.answered = 'false';
-
-      const qText = document.createElement('div');
-      qText.className = 'quiz-q-text';
-      qText.innerHTML = '<strong>' + (qi + 1) + '.</strong> ' + q.q;
-      div.appendChild(qText);
-
-      const optionsDiv = document.createElement('div');
-      optionsDiv.className = 'quiz-options';
-      q.options.forEach(function(opt, oi) {
-        const btn = document.createElement('button');
-        btn.className = 'quiz-option';
-        btn.dataset.q = qi;
-        btn.dataset.opt = oi;
-        btn.innerHTML = '<span class="opt-letter">' + String.fromCharCode(65 + oi) + '</span><span>' + opt + '</span>';
-        optionsDiv.appendChild(btn);
-      });
-      div.appendChild(optionsDiv);
-
-      const checkBtn = document.createElement('button');
-      checkBtn.className = 'quiz-check-btn';
-      checkBtn.dataset.check = qi;
-      checkBtn.textContent = 'Check Answer';
-      checkBtn.disabled = true;
-      div.appendChild(checkBtn);
-
-      const feedback = document.createElement('div');
-      feedback.className = 'quiz-feedback';
-      div.appendChild(feedback);
-
-      container.appendChild(div);
-    });
-
-    container.addEventListener('click', function(e) {
-      const optBtn = e.target.closest('.quiz-option');
-      if (optBtn && optBtn.classList.contains('disabled')) return;
-      if (!optBtn) return;
-      const qi = parseInt(optBtn.dataset.q);
-      const oi = parseInt(optBtn.dataset.opt);
-      const qDiv = document.querySelector('.quiz-question[data-index="' + qi + '"]');
-      if (qDiv.dataset.answered === 'true') return;
-      qDiv.querySelectorAll('.quiz-option').forEach(function(o) { o.classList.remove('selected'); });
-      optBtn.classList.add('selected');
-      quizAnswered[qi] = oi;
-      qDiv.querySelector('.quiz-check-btn').disabled = false;
-    });
-
-    container.addEventListener('click', function(e) {
-      const checkBtn = e.target.closest('.quiz-check-btn');
-      if (!checkBtn) return;
-      const qi = parseInt(checkBtn.dataset.check);
-      if (quizAnswered[qi] === undefined) return;
-      const qDiv = document.querySelector('.quiz-question[data-index="' + qi + '"]');
-      const options = qDiv.querySelectorAll('.quiz-option');
-      const feedback = qDiv.querySelector('.quiz-feedback');
-      qDiv.dataset.answered = 'true';
-      options.forEach(function(o) { o.classList.add('disabled'); o.style.pointerEvents = 'none'; });
-      const selected = quizAnswered[qi];
-      const correct = QUIZ_DATA[qi].correct;
-      options[correct].classList.add('correct');
-      if (selected !== correct) { options[selected].classList.add('incorrect'); }
-      const isCorrect = selected === correct;
-      if (isCorrect) quizCorrect++;
-      quizTotal++;
-      feedback.className = 'quiz-feedback show ' + (isCorrect ? 'correct' : 'incorrect');
-      feedback.innerHTML = (isCorrect ? 'Correct!' : 'Incorrect.') + ' ' + QUIZ_DATA[qi].explanation;
-      checkBtn.style.display = 'none';
-      if (Object.keys(quizAnswered).length === QUIZ_DATA.length) {
-        setTimeout(function() {
-          const scoreEl = document.getElementById('quizScore');
-          scoreEl.style.display = 'block';
-          document.getElementById('scoreNum').textContent = quizCorrect + '/' + quizTotal;
-        }, 500);
-      }
-    });
-  }
-
-  // ===== INIT =====
-  function init() {
-    updateConvolution();
-    computeSoftmax();
-    buildLogitsTable();
-    buildActivationTable();
-    buildQuiz();
-  }
-
-  document.addEventListener('DOMContentLoaded', init);
-})();
-</script>
 </body>
 </html>
